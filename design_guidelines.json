@@ -1,0 +1,109 @@
+{
+  "theme": "LIGHT",
+  "archetype": "Organic & Earthy",
+  "colors": {
+    "background": "#FFFDF9",
+    "primary": "#E63946",
+    "accent": "#F4A261",
+    "text": {
+      "main": "#1A1A1A",
+      "muted": "#6B7280"
+    },
+    "surface": {
+      "card": "#FFFFFF",
+      "admin_bg": "#F8F8F8"
+    },
+    "border": "#F0E6DA",
+    "status": {
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "danger": "#EF4444",
+      "info": "#3B82F6"
+    }
+  },
+  "typography": {
+    "font_families": {
+      "heading": "Playfair Display, serif",
+      "body": "Poppins, sans-serif"
+    },
+    "scales": {
+      "h1": "text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight font-serif",
+      "h2": "text-3xl md:text-4xl font-bold font-serif",
+      "h3": "text-2xl md:text-3xl font-semibold font-serif",
+      "h4": "text-xl font-semibold font-serif",
+      "body": "text-base text-[#1A1A1A] font-sans",
+      "small": "text-sm text-[#6B7280] font-sans",
+      "nav": "text-base font-medium font-sans"
+    }
+  },
+  "layout_and_spacing": {
+    "padding": {
+      "section": "py-16 md:py-24",
+      "card": "p-6",
+      "container": "px-4 md:px-8 max-w-7xl mx-auto"
+    },
+    "border_radius": {
+      "card": "rounded-2xl",
+      "button": "rounded-full",
+      "image": "rounded-xl"
+    },
+    "shadows": {
+      "soft": "shadow-[0_4px_20px_rgba(0,0,0,0.05)]",
+      "hover": "shadow-[0_10px_40px_rgba(230,57,70,0.1)]",
+      "drawer": "shadow-[-10px_0_40px_rgba(0,0,0,0.08)]"
+    }
+  },
+  "components": {
+    "hero": {
+      "style": "Full-width background image with heavy warm overlay (bg-black/40) to ensure text readability.",
+      "cta": "Bright primary color button, rounded-full, with hover scale effect."
+    },
+    "cards": {
+      "menu_item": "Pure white background, 16px border-radius, soft shadow. Lifts on hover (translate-y-[-4px]). Include a green dot icon for veg. 'Add' button in primary red."
+    },
+    "navigation": {
+      "customer": "Sticky top, white background, bottom border shadow. Logo on left, floating cart button on right.",
+      "admin": "Sidebar layout on desktop, pure white sidebar, #F8F8F8 main content area. Red active state accents.",
+      "menu_tabs": "Horizontal scrollable tabs on mobile. Active state uses red text and a smooth underline animation."
+    },
+    "cart_drawer": {
+      "style": "Slide-in from right. White background. Sticky bottom checkout button."
+    },
+    "admin_dashboard": {
+      "style": "Bento grid for stats (Active orders, revenue, etc.). White cards on grey bg.",
+      "table": "Clean, borders between rows, colored status badges (e.g., green for Ready, yellow for Preparing)."
+    },
+    "kds_system": {
+      "style": "High legibility. Darker headers for tickets. Color-coded timers and statuses. Grid layout prioritizing current active orders."
+    },
+    "toast": {
+      "style": "White background, soft shadow, colored left border indicating success/error."
+    }
+  },
+  "motion": {
+    "hover": "transition-transform duration-300 ease-out hover:-translate-y-1",
+    "button_click": "active:scale-95 transition-transform",
+    "drawer": "transition-transform duration-300 ease-in-out"
+  },
+  "assets": {
+    "images": {
+      "hero_pizza": "https://images.pexels.com/photos/8646740/pexels-photo-8646740.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "veg_pizza": "https://images.unsplash.com/photo-1590947132387-155cc02f3212?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTJ8MHwxfHNlYXJjaHwyfHx2ZWclMjBwaXp6YSUyMHNsaWNlJTIwcnVzdGljJTIwYnJpZ2h0fGVufDB8fHx8MTc4MjA3NTUwMXww&ixlib=rb-4.1.0&q=85",
+      "burger": "https://images.pexels.com/photos/5745991/pexels-photo-5745991.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "garlic_bread": "https://images.pexels.com/photos/13062441/pexels-photo-13062441.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "milkshake": "https://images.pexels.com/photos/32469289/pexels-photo-32469289.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "combo_meal": "https://images.pexels.com/photos/29418865/pexels-photo-29418865.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Use Google Fonts: 'Poppins' for body text and UI components, and 'Playfair Display' for Headings.",
+    "All interactive elements MUST include data-testid attributes (e.g. data-testid='menu-add-button').",
+    "Do NOT use pure black; use #1A1A1A for high-contrast text.",
+    "Implement Shadcn UI components but override their default borders/radii to match the 16px (rounded-2xl) warm cafe theme.",
+    "Use the provided Unsplash/Pexels URLs for seeding the menu item mock data.",
+    "For the KDS view, ensure order cards are large and instantly readable with clear color-coding for status (Received -> Preparing -> Ready).",
+    "For Admin dashboard, ensure the background is #F8F8F8 to contrast with the pure white cards.",
+    "Use lucide-react for standard icons.",
+    "Apply translate-y-[-4px] and shadow on hover for all menu item cards to give a premium feel."
+  ]
+}
