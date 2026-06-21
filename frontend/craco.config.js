@@ -61,6 +61,43 @@ let webpackConfig = {
 };
 
 webpackConfig.devServer = (devServerConfig) => {
+  // Compat shim: webpack-dev-server v5 (forced via resolutions) removed/changed many v4 options.
+  // Strip v4-era options so react-scripts / visual-edits don't crash on startup.
+  const v4OnlyKeys = [
+    "onBeforeSetupMiddleware",
+    "onAfterSetupMiddleware",
+    "https",
+    "public",
+    "publicPath",
+    "clientLogLevel",
+    "disableHostCheck",
+    "contentBase",
+    "contentBasePublicPath",
+    "watchContentBase",
+    "watchOptions",
+    "noInfo",
+    "quiet",
+    "inline",
+    "stats",
+    "useLocalIp",
+    "sockHost",
+    "sockPath",
+    "sockPort",
+    "transportMode",
+    "before",
+    "after",
+    "setup",
+    "lazy",
+    "filename",
+    "overlay",
+    "progress",
+  ];
+  for (const k of v4OnlyKeys) {
+    if (k in devServerConfig) delete devServerConfig[k];
+  }
+  // allowedHosts: v5 accepts "all" string or array
+  devServerConfig.allowedHosts = "all";
+
   // Add health check endpoints if enabled
   if (config.enableHealthCheck && setupHealthEndpoints && healthPluginInstance) {
     const originalSetupMiddlewares = devServerConfig.setupMiddlewares;

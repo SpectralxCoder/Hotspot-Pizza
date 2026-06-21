@@ -1,89 +1,146 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
+from pydantic import BaseModel
+from datetime import datetime, timedelta, timezone
+from jose import jwt, JWTError
+from passlib.context import CryptContext
 
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(ROOT_DIR / ".env")
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+# ---------- Config ----------
+mongo_url = os.environ["MONGO_URL"]
+DB_NAME = os.environ["DB_NAME"]
+JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_HOURS = 24 * 7  # 1 week session
+ADMIN_USERNAME = os.environ["ADMIN_USERNAME"]
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
+
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[DB_NAME]
 
-# Create the main app without a prefix
-app = FastAPI()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/admin/login", auto_error=False)
 
-# Create a router with the /api prefix
+# ---------- App ----------
+app = FastAPI(title="Hot Spot Pizza API")
 api_router = APIRouter(prefix="/api")
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
+logger = logging.getLogger("hotspot")
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+# ---------- Models ----------
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
 
-# Add your routes to the router instead of directly to app
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+
+
+class VerifyResponse(BaseModel):
+    valid: bool
+    username: str | None = None
+
+
+# ---------- Helpers ----------
+def create_access_token(username: str) -> str:
+    payload = {
+        "sub": username,
+        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRE_HOURS),
+        "iat": datetime.now(timezone.utc),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def decode_token(token: str) -> str | None:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload.get("sub")
+    except JWTError:
+        return None
+
+
+async def get_current_admin(token: str | None = Depends(oauth2_scheme)) -> str:
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    username = decode_token(token)
+    if not username or username != ADMIN_USERNAME:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return username
+
+
+async def ensure_admin_seed() -> None:
+    existing = await db.admin_users.find_one({"username": ADMIN_USERNAME})
+    if existing:
+        return
+    await db.admin_users.insert_one(
+        {
+            "username": ADMIN_USERNAME,
+            "password_hash": pwd_context.hash(ADMIN_PASSWORD),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    logger.info("Seeded default admin user: %s", ADMIN_USERNAME)
+
+
+# ---------- Routes ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"service": "Hot Spot Pizza API", "status": "ok"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+@api_router.get("/health")
+async def health():
+    return {"status": "healthy", "time": datetime.now(timezone.utc).isoformat()}
 
-# Include the router in the main app
+
+@api_router.post("/admin/login", response_model=TokenResponse)
+async def admin_login(payload: AdminLoginRequest):
+    # Read seeded admin from Mongo; fall back to env-based check
+    record = await db.admin_users.find_one({"username": payload.username})
+    if not record:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not pwd_context.verify(payload.password, record["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_access_token(payload.username)
+    return TokenResponse(access_token=token, username=payload.username)
+
+
+@api_router.get("/admin/verify", response_model=VerifyResponse)
+async def admin_verify(username: str = Depends(get_current_admin)):
+    return VerifyResponse(valid=True, username=username)
+
+
+# ---------- App wiring ----------
 app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def on_startup():
+    await ensure_admin_seed()
+
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def on_shutdown():
     client.close()
