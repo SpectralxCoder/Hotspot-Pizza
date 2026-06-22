@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, Image as ImageIcon, X, Upload, Sparkles, EyeOff, Database } from "lucide-react";
+import { Plus, Edit, Trash2, Image as ImageIcon, X, Upload, Sparkles, Database, AlertTriangle } from "lucide-react";
 import SetupNotice from "../components/SetupNotice";
-import { listMenuItems, subscribeMenuItems, createMenuItem, updateMenuItem, deleteMenuItem, uploadMenuImage, CATEGORIES } from "../lib/menuService";
+import { listMenuItems, subscribeMenuItems, createMenuItem, updateMenuItem, deleteMenuItem, uploadMenuImage, CATEGORIES, isV2SchemaApplied } from "../lib/menuService";
 import { seedMenuItems } from "../lib/seed";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { toast } from "sonner";
@@ -13,17 +13,22 @@ export default function AdminMenuManager() {
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(null);
     const [filter, setFilter] = useState("All");
+    const [schemaOk, setSchemaOk] = useState(true);
     const confirm = useConfirm();
 
     const load = async () => {
         try {
             const data = await listMenuItems();
             setItems(data);
+        } catch (e) {
+            console.warn("listMenuItems failed:", e?.message);
+            setItems([]);
         } finally {
             setLoading(false);
         }
     };
     useEffect(() => {
+        isV2SchemaApplied().then(setSchemaOk);
         load();
         const u = subscribeMenuItems(load);
         return u;
@@ -106,6 +111,17 @@ export default function AdminMenuManager() {
                 </div>
             </div>
             <SetupNotice />
+            {!schemaOk && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-2xl flex items-start gap-3" data-testid="v2-schema-notice">
+                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                        <p className="font-semibold">Schema v2 not applied yet</p>
+                        <p className="text-amber-800">
+                            Open Supabase → SQL Editor and run <code className="bg-amber-100 px-1 rounded">/app/database/schema_v2.sql</code>. Until then this page can&apos;t persist menu items.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                 {["All", ...CATEGORIES].map((c) => (
