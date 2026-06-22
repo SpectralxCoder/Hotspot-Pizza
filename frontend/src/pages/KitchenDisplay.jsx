@@ -42,7 +42,7 @@ export default function KitchenDisplay() {
             <SetupNotice />
 
             {orders.length === 0 ? (
-                <div className="bg-white rounded-2xl p-12 border border-warmBorder text-center" data-testid="kds-empty">
+                <div className="bg-white rounded-2xl p-12 border border-warmBeige text-center" data-testid="kds-empty">
                     <p className="font-display text-2xl">All caught up! 🎉</p>
                     <p className="text-sm text-muted-foreground mt-1">No active tickets in the kitchen.</p>
                 </div>

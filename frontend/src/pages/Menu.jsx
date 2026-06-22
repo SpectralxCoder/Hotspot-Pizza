@@ -7,6 +7,8 @@ import CartDrawer from "../components/CartDrawer";
 import MenuItemCard from "../components/MenuItemCard";
 import { CATEGORIES, MENU, searchMenu } from "../data/menu";
 
+const TABS = ["All", ...CATEGORIES];
+
 export default function Menu() {
     const [params] = useSearchParams();
     const tableParam = params.get("table");
@@ -14,11 +16,10 @@ export default function Menu() {
     const mode = tableParam ? "dine_in" : modeParam === "delivery" ? "delivery" : null;
 
     const [query, setQuery] = useState("");
-    const [activeCat, setActiveCat] = useState(CATEGORIES[0]);
+    const [activeTab, setActiveTab] = useState("All");
     const sectionRefs = useRef({});
 
     useEffect(() => {
-        // Persist mode/table for checkout
         if (tableParam) {
             sessionStorage.setItem("hotspot_order_mode", "dine_in");
             sessionStorage.setItem("hotspot_table_number", tableParam);
@@ -30,6 +31,11 @@ export default function Menu() {
 
     const filtered = useMemo(() => searchMenu(query), [query]);
 
+    const visibleCategories = useMemo(() => {
+        if (activeTab === "All") return CATEGORIES;
+        return [activeTab];
+    }, [activeTab]);
+
     const groupedByCategory = useMemo(() => {
         const groups = {};
         for (const c of CATEGORIES) groups[c] = [];
@@ -39,84 +45,78 @@ export default function Menu() {
         return groups;
     }, [filtered]);
 
-    const scrollToCategory = (cat) => {
-        setActiveCat(cat);
-        const el = sectionRefs.current[cat];
-        if (el) {
-            const top = el.getBoundingClientRect().top + window.scrollY - 140;
-            window.scrollTo({ top, behavior: "smooth" });
+    const handleTabClick = (tab) => {
+        setActiveTab(tab);
+        if (tab !== "All") {
+            requestAnimationFrame(() => {
+                const el = sectionRefs.current[tab];
+                if (el) {
+                    const top = el.getBoundingClientRect().top + window.scrollY - 100;
+                    window.scrollTo({ top, behavior: "smooth" });
+                }
+            });
+        } else {
+            window.scrollTo({ top: 0, behavior: "smooth" });
         }
     };
-
-    // Update active tab on scroll
-    useEffect(() => {
-        const onScroll = () => {
-            for (const cat of CATEGORIES) {
-                const el = sectionRefs.current[cat];
-                if (!el) continue;
-                const r = el.getBoundingClientRect();
-                if (r.top <= 200 && r.bottom > 200) {
-                    setActiveCat(cat);
-                    break;
-                }
-            }
-        };
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
-    }, []);
 
     return (
         <div className="min-h-screen flex flex-col bg-cream">
             <Navbar />
 
-            {/* Banner */}
-            <div className="bg-white border-b border-warmBorder">
-                <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Header */}
+            <section className="max-w-7xl mx-auto w-full px-4 md:px-8 pt-8 md:pt-12">
+                <div className="flex items-start justify-between flex-wrap gap-4">
                     <div>
-                        <h1 className="font-display text-3xl md:text-4xl">Our Menu</h1>
-                        <p className="text-sm text-muted-foreground mt-1">Crafted fresh, served hot.</p>
+                        <p className="eyebrow">Order Online</p>
+                        <h1 className="font-display text-5xl md:text-6xl font-extrabold mt-3">The Menu.</h1>
+                        <p className="text-base md:text-lg text-muted-foreground mt-4 max-w-md">
+                            Pick your weapon. We&apos;ll fire it up and get it to you faster than your delivery app can refresh.
+                        </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        {mode === "dine_in" && (
-                            <span className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-full text-xs font-medium" data-testid="mode-badge-dinein">
-                                <UtensilsCrossed className="w-3.5 h-3.5" />
-                                Dine-in · Table {tableParam}
-                            </span>
-                        )}
-                        {mode === "delivery" && (
-                            <span className="inline-flex items-center gap-2 bg-brand/10 text-brand border border-brand/30 px-3 py-1.5 rounded-full text-xs font-medium" data-testid="mode-badge-delivery">
-                                <MapPin className="w-3.5 h-3.5" />
-                                Home Delivery
-                            </span>
-                        )}
-                        <div className="relative">
-                            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Search items..."
-                                className="pl-9 pr-4 py-2 rounded-full border border-warmBorder bg-white text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 w-48 md:w-64"
-                                data-testid="menu-search-input"
-                            />
-                        </div>
-                    </div>
+                    {mode === "dine_in" && (
+                        <span className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-full text-xs font-semibold" data-testid="mode-badge-dinein">
+                            <UtensilsCrossed className="w-3.5 h-3.5" />
+                            Dine-in · Table {tableParam}
+                        </span>
+                    )}
+                    {mode === "delivery" && (
+                        <span className="inline-flex items-center gap-2 bg-brand/10 text-brand border border-brand/30 px-3 py-1.5 rounded-full text-xs font-semibold" data-testid="mode-badge-delivery">
+                            <MapPin className="w-3.5 h-3.5" />
+                            Home Delivery
+                        </span>
+                    )}
                 </div>
-            </div>
 
-            {/* Sticky tabs */}
-            <div className="sticky top-16 z-30 bg-cream/95 backdrop-blur border-b border-warmBorder">
-                <div className="max-w-7xl mx-auto px-4 md:px-8">
-                    <div className="flex gap-1 overflow-x-auto scrollbar-hide py-3">
-                        {CATEGORIES.map((cat) => (
+                {/* Search */}
+                <div className="relative mt-8 max-w-3xl">
+                    <Search className="w-5 h-5 text-muted-foreground absolute left-5 top-1/2 -translate-y-1/2" />
+                    <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search burgers, pizzas, wings..."
+                        className="w-full pl-14 pr-5 py-4 rounded-full bg-white text-base focus:outline-none focus:ring-2 focus:ring-brand/30 shadow-soft"
+                        data-testid="menu-search-input"
+                    />
+                </div>
+            </section>
+
+            {/* Pill tabs */}
+            <div className="sticky top-16 z-30 bg-cream/95 backdrop-blur">
+                <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                        {TABS.map((tab) => (
                             <button
-                                key={cat}
-                                onClick={() => scrollToCategory(cat)}
-                                className={`tab-underline relative whitespace-nowrap px-4 py-2 text-sm font-medium transition-colors ${
-                                    activeCat === cat ? "text-brand is-active" : "text-muted-foreground hover:text-foreground"
+                                key={tab}
+                                onClick={() => handleTabClick(tab)}
+                                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                                    activeTab === tab
+                                        ? "bg-brand text-white shadow-soft"
+                                        : "bg-white text-foreground hover:bg-warmBeige/50"
                                 }`}
-                                data-testid={`category-tab-${cat.replace(/\s+/g, "-").toLowerCase()}`}
+                                data-testid={`category-tab-${tab.replace(/\s+/g, "-").toLowerCase()}`}
                             >
-                                {cat}
+                                {tab}
                             </button>
                         ))}
                     </div>
@@ -124,22 +124,24 @@ export default function Menu() {
             </div>
 
             {/* Sections */}
-            <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 py-8 md:py-12">
-                {CATEGORIES.map((cat) => {
+            <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 pb-12">
+                {visibleCategories.map((cat) => {
                     const items = groupedByCategory[cat] || [];
                     if (items.length === 0) return null;
                     return (
                         <section
                             key={cat}
                             ref={(el) => (sectionRefs.current[cat] = el)}
-                            className="mb-12"
+                            className="mb-14"
                             data-testid={`category-section-${cat.replace(/\s+/g, "-").toLowerCase()}`}
                         >
-                            <div className="flex items-center gap-3 mb-5">
-                                <h2 className="font-display text-2xl md:text-3xl">{cat}</h2>
-                                <span className="text-xs text-muted-foreground">{items.length} items</span>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                            {activeTab === "All" && (
+                                <div className="flex items-end gap-3 mb-6">
+                                    <h2 className="font-display text-3xl md:text-4xl font-extrabold">{cat}</h2>
+                                    <span className="text-sm text-muted-foreground pb-1">{items.length} items</span>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                                 {items.map((it) => (
                                     <MenuItemCard key={it.id} item={it} />
                                 ))}
@@ -150,8 +152,8 @@ export default function Menu() {
 
                 {filtered.length === 0 && (
                     <div className="py-24 text-center" data-testid="menu-empty">
-                        <p className="font-display text-2xl">No items found</p>
-                        <p className="text-sm text-muted-foreground mt-1">Try a different search.</p>
+                        <p className="font-display text-3xl font-extrabold">No items found</p>
+                        <p className="text-sm text-muted-foreground mt-2">Try a different search.</p>
                     </div>
                 )}
             </main>

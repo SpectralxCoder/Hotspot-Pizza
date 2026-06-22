@@ -8,9 +8,9 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ["Poppins", "ui-sans-serif", "system-ui", "sans-serif"],
-                serif: ["Playfair Display", "Georgia", "serif"],
-                display: ["Playfair Display", "Georgia", "serif"],
+                sans: ["Bricolage Grotesque", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                display: ["Bricolage Grotesque", "Inter", "system-ui", "sans-serif"],
+                serif: ["Bricolage Grotesque", "Inter", "system-ui", "sans-serif"],
             },
             borderRadius: {
                 lg: "var(--radius)",
@@ -52,15 +52,17 @@ module.exports = {
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",
                 brand: {
-                    DEFAULT: "#E63946",
-                    50: "#FDECEE",
-                    100: "#FBD1D5",
-                    600: "#E63946",
-                    700: "#C0303C",
+                    DEFAULT: "#EF4444",
+                    50: "#FEF2F2",
+                    100: "#FEE2E2",
+                    600: "#EF4444",
+                    700: "#DC2626",
                 },
-                cream: "#FFFDF9",
-                warmBorder: "#F0E6DA",
-                warmOrange: "#F4A261",
+                cream: "#F5EFE6",
+                warmBorder: "#E8DCC8",
+                warmBeige: "#E8DCC8",
+                ink: "#131211",
+                ink2: "#1A1815",
             },
             keyframes: {
                 "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },

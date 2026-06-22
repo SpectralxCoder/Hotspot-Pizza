@@ -12,11 +12,11 @@ export default function OrderTracker({ status }) {
     const activeIndex = Math.max(STEPS.findIndex((s) => s.key === status), 0);
 
     return (
-        <div className="bg-white rounded-2xl border border-warmBorder p-6 shadow-soft" data-testid="order-tracker">
+        <div className="bg-white rounded-2xl border border-warmBeige p-6 shadow-soft" data-testid="order-tracker">
             <h3 className="font-display text-2xl mb-6">Order Status</h3>
             <div className="relative">
                 {/* Connecting line */}
-                <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-warmBorder" aria-hidden />
+                <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-warmBeige" aria-hidden />
                 <div
                     className="absolute left-5 top-5 w-0.5 bg-brand transition-all duration-700"
                     style={{ height: `${(activeIndex / (STEPS.length - 1)) * 100}%` }}
@@ -35,7 +35,7 @@ export default function OrderTracker({ status }) {
                                             ? idx === STEPS.length - 1
                                                 ? "border-emerald-600 bg-emerald-600 text-white"
                                                 : "border-brand bg-brand text-white"
-                                            : "border-warmBorder bg-white text-muted-foreground"
+                                            : "border-warmBeige bg-white text-muted-foreground"
                                     } ${isCurrent ? "ring-4 ring-brand/15" : ""}`}
                                 >
                                     <Icon className="w-5 h-5" />

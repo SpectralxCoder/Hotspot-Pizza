@@ -29,7 +29,7 @@ export default function OrderStatus() {
             <div className="min-h-screen bg-cream">
                 <Navbar />
                 <div className="max-w-3xl mx-auto px-4 py-16" data-testid="status-loading">
-                    <div className="bg-white rounded-2xl p-8 border border-warmBorder animate-pulse h-40" />
+                    <div className="bg-white rounded-2xl p-8 border border-warmBeige animate-pulse h-40" />
                 </div>
                 <Footer />
             </div>
@@ -43,7 +43,7 @@ export default function OrderStatus() {
                 <Link to="/menu" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-brand mb-4">
                     <ArrowLeft className="w-4 h-4" /> Continue browsing
                 </Link>
-                <div className="bg-white rounded-2xl p-6 md:p-8 border border-warmBorder shadow-soft mb-6" data-testid="order-status-card">
+                <div className="bg-white rounded-2xl p-6 md:p-8 border border-warmBeige shadow-soft mb-6" data-testid="order-status-card">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         <div>
                             <p className="text-xs text-muted-foreground">Order ID</p>

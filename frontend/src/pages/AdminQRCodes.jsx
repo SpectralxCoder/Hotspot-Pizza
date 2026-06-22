@@ -27,7 +27,7 @@ export default function AdminQRCodes() {
             </div>
 
             <div className="text-xs text-muted-foreground no-print">
-                Base URL: <code className="bg-white px-2 py-0.5 rounded border border-warmBorder">{baseUrl}</code>
+                Base URL: <code className="bg-white px-2 py-0.5 rounded border border-warmBeige">{baseUrl}</code>
             </div>
 
             <div id="qr-print-area" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -48,7 +48,7 @@ export default function AdminQRCodes() {
 function QRCard({ label, url, testid, highlight }) {
     return (
         <div
-            className={`bg-white rounded-2xl p-4 border border-warmBorder shadow-soft text-center break-inside-avoid ${
+            className={`bg-white rounded-2xl p-4 border border-warmBeige shadow-soft text-center break-inside-avoid ${
                 highlight ? "ring-2 ring-brand/30" : ""
             }`}
             data-testid={testid}

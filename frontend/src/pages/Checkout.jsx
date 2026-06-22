@@ -98,16 +98,16 @@ export default function Checkout() {
                 <SetupNotice />
 
                 <div className="grid md:grid-cols-3 gap-8 mt-4">
-                    <form onSubmit={handleSubmit} className="md:col-span-2 bg-white rounded-2xl p-6 md:p-8 border border-warmBorder shadow-soft" data-testid="checkout-form">
-                        <h1 className="font-display text-3xl mb-2">Checkout</h1>
+                    <form onSubmit={handleSubmit} className="md:col-span-2 bg-white rounded-[28px] p-6 md:p-8 shadow-soft" data-testid="checkout-form">
+                        <h1 className="font-display text-4xl font-extrabold mb-2">Checkout</h1>
                         <p className="text-sm text-muted-foreground mb-6">Tell us where you&apos;d like your slice of happiness.</p>
 
                         <div className="grid grid-cols-2 gap-3 mb-6">
                             <button
                                 type="button"
                                 onClick={() => setMode("dine_in")}
-                                className={`p-4 rounded-2xl border text-left transition-all ${
-                                    mode === "dine_in" ? "border-brand bg-brand/5" : "border-warmBorder hover:border-brand/40"
+                                className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                                    mode === "dine_in" ? "border-brand bg-brand/5" : "border-warmBeige hover:border-brand/40"
                                 }`}
                                 data-testid="mode-dinein-button"
                             >
@@ -118,8 +118,8 @@ export default function Checkout() {
                             <button
                                 type="button"
                                 onClick={() => setMode("delivery")}
-                                className={`p-4 rounded-2xl border text-left transition-all ${
-                                    mode === "delivery" ? "border-brand bg-brand/5" : "border-warmBorder hover:border-brand/40"
+                                className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                                    mode === "delivery" ? "border-brand bg-brand/5" : "border-warmBeige hover:border-brand/40"
                                 }`}
                                 data-testid="mode-delivery-button"
                             >
@@ -138,7 +138,7 @@ export default function Checkout() {
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                                     placeholder="Your full name"
-                                    className="mt-1 w-full px-4 py-3 rounded-2xl border border-warmBorder bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                                    className="mt-1 w-full px-4 py-3 rounded-2xl border border-warmBeige bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
                                     data-testid="input-name"
                                     required
                                 />
@@ -154,7 +154,7 @@ export default function Checkout() {
                                         value={tableNumber}
                                         onChange={(e) => setTableNumber(e.target.value)}
                                         placeholder="Table number"
-                                        className="mt-1 w-full px-4 py-3 rounded-2xl border border-warmBorder bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                                        className="mt-1 w-full px-4 py-3 rounded-2xl border border-warmBeige bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
                                         data-testid="input-table"
                                         required
                                     />
@@ -169,7 +169,7 @@ export default function Checkout() {
                                             value={form.phone}
                                             onChange={(e) => setForm({ ...form, phone: e.target.value })}
                                             placeholder="10-digit mobile number"
-                                            className="mt-1 w-full px-4 py-3 rounded-2xl border border-warmBorder bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                                            className="mt-1 w-full px-4 py-3 rounded-2xl border border-warmBeige bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
                                             data-testid="input-phone"
                                             required
                                         />
@@ -182,7 +182,7 @@ export default function Checkout() {
                                             value={form.address}
                                             onChange={(e) => setForm({ ...form, address: e.target.value })}
                                             placeholder="House no, street, locality, landmark, city"
-                                            className="mt-1 w-full px-4 py-3 rounded-2xl border border-warmBorder bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                                            className="mt-1 w-full px-4 py-3 rounded-2xl border border-warmBeige bg-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
                                             data-testid="input-address"
                                             required
                                         />
@@ -190,24 +190,24 @@ export default function Checkout() {
                                 </>
                             )}
 
-                            <div className="flex items-center gap-2 p-3 bg-cream rounded-2xl border border-warmBorder">
+                            <div className="flex items-center gap-2 p-3 bg-cream rounded-2xl border border-warmBeige">
                                 <Wallet className="w-5 h-5 text-brand" />
                                 <p className="text-sm">Payment: <span className="font-medium">Pay on Delivery</span></p>
                             </div>
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={submitting || items.length === 0}
-                            className="mt-6 w-full bg-brand text-white py-3.5 rounded-full font-medium hover:bg-brand-700 active:scale-[0.98] transition-all shadow-soft disabled:opacity-40 disabled:cursor-not-allowed"
-                            data-testid="place-order-button"
+                            <button
+                                type="submit"
+                                disabled={submitting || items.length === 0}
+                                className="mt-6 w-full bg-brand text-white py-4 rounded-full font-semibold hover:bg-brand-700 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                data-testid="place-order-button"
                         >
                             {submitting ? "Placing order..." : `Place Order — ₹${totals.subtotal}`}
                         </button>
                     </form>
 
-                    <aside className="bg-white rounded-2xl p-6 border border-warmBorder shadow-soft h-fit" data-testid="checkout-summary">
-                        <h3 className="font-display text-xl mb-4">Order summary</h3>
+                    <aside className="bg-white rounded-[28px] p-6 shadow-soft h-fit" data-testid="checkout-summary">
+                        <h3 className="font-display text-xl font-extrabold mb-4">Order summary</h3>
                         {items.length === 0 ? (
                             <p className="text-sm text-muted-foreground">Your cart is empty.</p>
                         ) : (
@@ -224,9 +224,9 @@ export default function Checkout() {
                                 ))}
                             </ul>
                         )}
-                        <div className="border-t border-warmBorder pt-3 flex items-center justify-between">
+                        <div className="border-t border-warmBeige pt-3 flex items-center justify-between">
                             <span className="text-sm text-muted-foreground">Total</span>
-                            <span className="font-display text-2xl text-brand inline-flex items-center"><IndianRupee className="w-5 h-5" />{totals.subtotal}</span>
+                            <span className="font-display text-2xl font-extrabold text-foreground inline-flex items-center"><IndianRupee className="w-5 h-5" />{totals.subtotal}</span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-3">Estimated time: 20–30 minutes</p>
                     </aside>

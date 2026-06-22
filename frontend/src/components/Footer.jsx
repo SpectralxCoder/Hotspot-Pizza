@@ -1,33 +1,46 @@
 import React from "react";
-import { Pizza } from "lucide-react";
+import { Flame, Instagram, Twitter, Facebook } from "lucide-react";
 
 export default function Footer() {
     return (
-        <footer className="bg-white border-t border-warmBorder mt-16">
-            <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 grid md:grid-cols-3 gap-8">
+        <footer className="bg-ink text-white mt-20" data-testid="footer">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-14 grid md:grid-cols-3 gap-10">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand text-white">
-                            <Pizza className="w-5 h-5" />
+                    <div className="flex items-center gap-2.5">
+                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-brand text-white">
+                            <Flame className="w-5 h-5" strokeWidth={2.5} />
                         </span>
-                        <span className="font-display text-xl">Hot Spot <span className="text-brand">Pizza</span></span>
+                        <span className="font-display text-2xl font-extrabold">Hotspot</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-3 max-w-xs">
-                        Where every slice tells a story. Handcrafted, fresh, and made with love.
+                    <p className="text-sm text-white/60 mt-4 max-w-xs leading-relaxed">
+                        Born in the kitchen. Forged in flame. Hotspot serves fast food the way it was meant to be — bold, fresh, and unapologetically delicious.
                     </p>
                 </div>
                 <div>
-                    <h4 className="font-semibold text-sm mb-3">Visit Us</h4>
-                    <p className="text-sm text-muted-foreground">Open daily — 11 AM to 11 PM</p>
-                    <p className="text-sm text-muted-foreground mt-1">Dine-in · Takeaway · Delivery</p>
+                    <p className="eyebrow text-brand">Visit</p>
+                    <div className="mt-3 text-sm text-white/80 leading-relaxed">
+                        <p>42, Flame Lane</p>
+                        <p>Bengaluru, India 560001</p>
+                        <p className="text-white/60 mt-3">Daily · 11AM — 11PM</p>
+                    </div>
                 </div>
                 <div>
-                    <h4 className="font-semibold text-sm mb-3">Order</h4>
-                    <p className="text-sm text-muted-foreground">Scan the QR at your table or order online for home delivery.</p>
+                    <p className="eyebrow text-brand">Follow</p>
+                    <div className="mt-3 flex items-center gap-3">
+                        <a href="#" aria-label="Instagram" className="w-10 h-10 rounded-full border border-white/15 inline-flex items-center justify-center hover:bg-white/5 transition-colors">
+                            <Instagram className="w-4 h-4" />
+                        </a>
+                        <a href="#" aria-label="Twitter" className="w-10 h-10 rounded-full border border-white/15 inline-flex items-center justify-center hover:bg-white/5 transition-colors">
+                            <Twitter className="w-4 h-4" />
+                        </a>
+                        <a href="#" aria-label="Facebook" className="w-10 h-10 rounded-full border border-white/15 inline-flex items-center justify-center hover:bg-white/5 transition-colors">
+                            <Facebook className="w-4 h-4" />
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div className="border-t border-warmBorder text-center py-4 text-xs text-muted-foreground">
-                © {new Date().getFullYear()} Hot Spot Pizza — All rights reserved.
+            <div className="border-t border-white/10 text-center py-5 text-xs text-white/50">
+                © {new Date().getFullYear()} Hot Spot Pizza. All rights reserved.
             </div>
         </footer>
     );

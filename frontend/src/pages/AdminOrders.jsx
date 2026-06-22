@@ -54,9 +54,9 @@ export default function AdminOrders() {
             <SetupNotice />
 
             {loading ? (
-                <div className="bg-white rounded-2xl p-8 border border-warmBorder animate-pulse h-40" />
+                <div className="bg-white rounded-2xl p-8 border border-warmBeige animate-pulse h-40" />
             ) : orders.length === 0 ? (
-                <div className="bg-white rounded-2xl p-12 border border-warmBorder text-center" data-testid="orders-empty">
+                <div className="bg-white rounded-2xl p-12 border border-warmBeige text-center" data-testid="orders-empty">
                     <p className="font-display text-2xl">No active orders</p>
                     <p className="text-sm text-muted-foreground mt-1">New orders will appear here in real time.</p>
                 </div>
@@ -65,7 +65,7 @@ export default function AdminOrders() {
                     {orders.map((o) => (
                         <article
                             key={o.id}
-                            className="bg-white rounded-2xl p-6 border border-warmBorder shadow-soft"
+                            className="bg-white rounded-2xl p-6 border border-warmBeige shadow-soft"
                             data-testid={`order-card-${o.id}`}
                         >
                             <div className="flex items-start justify-between gap-3 mb-3">
@@ -91,7 +91,7 @@ export default function AdminOrders() {
                                 )}
                             </div>
 
-                            <ul className="text-sm space-y-1 mb-4 border-t border-warmBorder pt-3">
+                            <ul className="text-sm space-y-1 mb-4 border-t border-warmBeige pt-3">
                                 {o.order_items?.map((it) => (
                                     <li key={it.id} className="flex items-center justify-between">
                                         <span>{it.quantity}× {it.item_name}{it.size ? ` (${it.size})` : ""}</span>
@@ -100,13 +100,13 @@ export default function AdminOrders() {
                                 ))}
                             </ul>
 
-                            <div className="flex items-center justify-between pt-3 border-t border-warmBorder">
+                            <div className="flex items-center justify-between pt-3 border-t border-warmBeige">
                                 <p className="font-display text-2xl text-brand">₹{o.total_amount}</p>
                                 <div className="flex items-center gap-2">
                                     <select
                                         value={o.status}
                                         onChange={(e) => handleStatusChange(o, e.target.value)}
-                                        className="text-sm border border-warmBorder rounded-full px-3 py-1.5 bg-white focus:outline-none focus:border-brand"
+                                        className="text-sm border border-warmBeige rounded-full px-3 py-1.5 bg-white focus:outline-none focus:border-brand"
                                         data-testid={`status-select-${o.id}`}
                                     >
                                         {ORDER_STATUSES.filter((s) => s !== "Done").map((s) => (

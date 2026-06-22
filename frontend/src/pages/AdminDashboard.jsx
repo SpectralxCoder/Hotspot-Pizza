@@ -5,7 +5,7 @@ import { listActiveOrders, listAllOrders, subscribeOrders } from "../lib/orders"
 
 function StatCard({ Icon, label, value, accent, testid }) {
     return (
-        <div className="bg-white rounded-2xl p-5 border border-warmBorder shadow-soft" data-testid={testid}>
+        <div className="bg-white rounded-2xl p-5 border border-warmBeige shadow-soft" data-testid={testid}>
             <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">{label}</p>
                 <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${accent}`}>
@@ -68,18 +68,18 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard Icon={ListOrdered} label="Active Orders" value={stats.active} accent="bg-brand" testid="stat-active-orders" />
-                <StatCard Icon={ShoppingBag} label="Orders Today" value={stats.todaysCount} accent="bg-warmOrange" testid="stat-orders-today" />
+                <StatCard Icon={ShoppingBag} label="Orders Today" value={stats.todaysCount} accent="bg-amber-500" testid="stat-orders-today" />
                 <StatCard Icon={IndianRupee} label="Revenue Today" value={`₹${stats.revenue}`} accent="bg-emerald-600" testid="stat-revenue-today" />
                 <StatCard Icon={TrendingUp} label="Avg Order Value" value={`₹${stats.avg}`} accent="bg-blue-600" testid="stat-avg-order" />
             </div>
 
             <div className="grid lg:grid-cols-3 gap-5">
-                <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-warmBorder shadow-soft" data-testid="recent-orders-panel">
+                <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-warmBeige shadow-soft" data-testid="recent-orders-panel">
                     <h2 className="font-display text-xl mb-4">Recent Orders</h2>
                     {recent.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No orders yet.</p>
                     ) : (
-                        <div className="divide-y divide-warmBorder">
+                        <div className="divide-y divide-warmBeige">
                             {recent.map((o) => (
                                 <div key={o.id} className="flex items-center justify-between py-3" data-testid={`recent-order-${o.id}`}>
                                     <div>
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
                     )}
                 </div>
 
-                <div className="bg-white rounded-2xl p-6 border border-warmBorder shadow-soft" data-testid="top-items-panel">
+                <div className="bg-white rounded-2xl p-6 border border-warmBeige shadow-soft" data-testid="top-items-panel">
                     <h2 className="font-display text-xl mb-4">Top Items Today</h2>
                     {stats.top.length === 0 ? (
                         <p className="text-sm text-muted-foreground">Nothing yet today.</p>

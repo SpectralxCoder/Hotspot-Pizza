@@ -17,13 +17,13 @@ export default function PizzaSizeDialog({ open, onClose, item, onConfirm }) {
             data-testid="size-dialog-backdrop"
         >
             <div
-                className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md p-6 shadow-drawer animate-in slide-in-from-bottom-5"
+                className="bg-white rounded-t-[28px] sm:rounded-[28px] w-full sm:max-w-md p-6 shadow-drawer"
                 onClick={(e) => e.stopPropagation()}
                 data-testid="size-dialog"
             >
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h3 className="font-display text-2xl">{item.name}</h3>
+                        <h3 className="font-display text-2xl font-extrabold">{item.name}</h3>
                         <p className="text-sm text-muted-foreground mt-1">Choose your size</p>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-cream" data-testid="size-dialog-close" aria-label="Close">
@@ -31,27 +31,27 @@ export default function PizzaSizeDialog({ open, onClose, item, onConfirm }) {
                     </button>
                 </div>
 
-                <div className="mt-5 space-y-2">
+                <div className="mt-6 space-y-2">
                     {item.sizes.map((s) => (
                         <button
                             key={s.size}
                             onClick={() => setSelected(s)}
-                            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                            className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
                                 selected?.size === s.size
                                     ? "border-brand bg-brand/5"
-                                    : "border-warmBorder hover:border-brand/40"
+                                    : "border-warmBeige hover:border-brand/40"
                             }`}
                             data-testid={`size-option-${s.size.toLowerCase()}`}
                         >
                             <div className="flex items-center gap-3">
                                 <span
                                     className={`w-4 h-4 rounded-full border-2 ${
-                                        selected?.size === s.size ? "border-brand bg-brand" : "border-warmBorder"
+                                        selected?.size === s.size ? "border-brand bg-brand" : "border-warmBeige"
                                     }`}
                                 />
-                                <span className="font-medium">{s.size}</span>
+                                <span className="font-semibold">{s.size}</span>
                             </div>
-                            <span className="font-display text-xl text-brand">₹{s.price}</span>
+                            <span className="font-display text-xl font-extrabold">₹{s.price}</span>
                         </button>
                     ))}
                 </div>
@@ -59,7 +59,7 @@ export default function PizzaSizeDialog({ open, onClose, item, onConfirm }) {
                 <button
                     onClick={() => onConfirm(selected)}
                     disabled={!selected}
-                    className="mt-6 w-full bg-brand text-white py-3 rounded-full font-medium hover:bg-brand-700 active:scale-[0.98] transition-all"
+                    className="mt-6 w-full bg-brand text-white py-3.5 rounded-full font-semibold hover:bg-brand-700 active:scale-[0.98] transition-all"
                     data-testid="size-dialog-confirm"
                 >
                     Add to cart — ₹{selected?.price}

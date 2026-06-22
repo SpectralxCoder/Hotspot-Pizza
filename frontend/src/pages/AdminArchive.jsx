@@ -51,7 +51,7 @@ export default function AdminArchive() {
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                         placeholder="Search by name, order or date..."
-                        className="pl-9 pr-4 py-2 rounded-full border border-warmBorder bg-white text-sm focus:outline-none focus:border-brand w-64"
+                        className="pl-9 pr-4 py-2 rounded-full border border-warmBeige bg-white text-sm focus:outline-none focus:border-brand w-64"
                         data-testid="archive-search"
                     />
                 </div>
@@ -59,14 +59,14 @@ export default function AdminArchive() {
             <SetupNotice />
 
             {loading ? (
-                <div className="bg-white rounded-2xl p-8 border border-warmBorder animate-pulse h-40" />
+                <div className="bg-white rounded-2xl p-8 border border-warmBeige animate-pulse h-40" />
             ) : filtered.length === 0 ? (
-                <div className="bg-white rounded-2xl p-12 border border-warmBorder text-center" data-testid="archive-empty">
+                <div className="bg-white rounded-2xl p-12 border border-warmBeige text-center" data-testid="archive-empty">
                     <p className="font-display text-2xl">No archived orders</p>
                     <p className="text-sm text-muted-foreground mt-1">Marked-done orders will be moved here.</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl border border-warmBorder shadow-soft overflow-hidden">
+                <div className="bg-white rounded-2xl border border-warmBeige shadow-soft overflow-hidden">
                     <table className="w-full text-sm">
                         <thead className="bg-cream text-left">
                             <tr>
@@ -82,7 +82,7 @@ export default function AdminArchive() {
                                 const d = a.order_data || {};
                                 const items = d.order_items || [];
                                 return (
-                                    <tr key={a.id} className="border-t border-warmBorder" data-testid={`archive-row-${a.id}`}>
+                                    <tr key={a.id} className="border-t border-warmBeige" data-testid={`archive-row-${a.id}`}>
                                         <td className="px-4 py-3 font-medium">{d.order_number || "—"}</td>
                                         <td className="px-4 py-3">{a.customer_name}</td>
                                         <td className="px-4 py-3 text-muted-foreground">
