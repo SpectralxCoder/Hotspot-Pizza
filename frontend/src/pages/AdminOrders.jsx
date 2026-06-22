@@ -3,11 +3,13 @@ import { Clock, MapPin, UtensilsCrossed } from "lucide-react";
 import SetupNotice from "../components/SetupNotice";
 import { archiveOrder, listActiveOrders, ORDER_STATUSES, subscribeOrders, updateOrderStatus } from "../lib/orders";
 import { StatusBadge } from "./AdminDashboard";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { toast } from "sonner";
 
 export default function AdminOrders() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
 
     const load = async () => {
         try {
@@ -36,7 +38,13 @@ export default function AdminOrders() {
     };
 
     const handleMarkDone = async (order) => {
-        if (!window.confirm(`Mark order ${order.order_number} as Done & archive?`)) return;
+        const ok = await confirm({
+            title: "Mark order as Done?",
+            message: `Order ${order.order_number} will be moved to Archive.`,
+            confirmText: "Mark Done & Archive",
+            tone: "primary",
+        });
+        if (!ok) return;
         try {
             await archiveOrder(order);
             toast.success("Order archived");

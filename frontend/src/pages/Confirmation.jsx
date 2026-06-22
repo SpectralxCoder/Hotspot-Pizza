@@ -76,8 +76,12 @@ export default function Confirmation() {
                         <div className="p-4 rounded-2xl bg-cream border border-warmBeige flex items-start gap-2">
                             <Clock className="w-4 h-4 text-brand shrink-0 mt-1" />
                             <div>
-                                <p className="text-xs text-muted-foreground">Estimated time</p>
-                                <p className="font-medium mt-1">20–30 mins</p>
+                                <p className="text-xs text-muted-foreground">{order.mode === "delivery" ? "Estimated delivery" : "Status"}</p>
+                                <p className="font-medium mt-1">
+                                    {order.mode === "delivery"
+                                        ? `${order.eta_minutes || 30} mins${order.distance_km ? ` · ${order.distance_km} km` : ""}`
+                                        : "Being prepared at counter"}
+                                </p>
                             </div>
                         </div>
                     </div>

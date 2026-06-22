@@ -1,14 +1,16 @@
 import React from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Flame, LayoutDashboard, ListOrdered, Archive, QrCode, ChefHat, LogOut } from "lucide-react";
+import { Flame, LayoutDashboard, ListOrdered, Archive, QrCode, ChefHat, LogOut, UtensilsCrossed, Settings, ArrowLeft } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const links = [
     { to: "/admin/dashboard", label: "Dashboard", Icon: LayoutDashboard, testid: "admin-nav-dashboard" },
     { to: "/admin/orders", label: "Active Orders", Icon: ListOrdered, testid: "admin-nav-orders" },
     { to: "/admin/kitchen", label: "Kitchen Display", Icon: ChefHat, testid: "admin-nav-kitchen" },
+    { to: "/admin/menu", label: "Menu Manager", Icon: UtensilsCrossed, testid: "admin-nav-menu" },
     { to: "/admin/archive", label: "Archive", Icon: Archive, testid: "admin-nav-archive" },
     { to: "/admin/qrcodes", label: "QR Codes", Icon: QrCode, testid: "admin-nav-qrcodes" },
+    { to: "/admin/settings", label: "Settings", Icon: Settings, testid: "admin-nav-settings" },
 ];
 
 export default function AdminSidebar() {
@@ -30,6 +32,13 @@ export default function AdminSidebar() {
                     <span className="font-display text-xl font-extrabold">Hotspot</span>
                 </Link>
                 <p className="text-xs text-muted-foreground mt-3 tracking-wider uppercase">Admin Console</p>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="mt-4 text-xs inline-flex items-center gap-1 text-muted-foreground hover:text-brand"
+                    data-testid="admin-back-button"
+                >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back
+                </button>
             </div>
             <nav className="flex-1 p-4 space-y-1">
                 {links.map(({ to, label, Icon, testid }) => (

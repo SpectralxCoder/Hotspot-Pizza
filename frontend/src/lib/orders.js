@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured, genOrderNumber } from "./supabase";
 export const ORDER_STATUSES = ["Received", "Preparing", "Ready", "Delivered", "Done"];
 export const ACTIVE_STATUSES = ["Received", "Preparing", "Ready", "Delivered"];
 
-export async function placeOrder({ customer_name, phone, address, table_number, mode, items, total_amount }) {
+export async function placeOrder({ customer_name, phone, address, table_number, mode, items, total_amount, user_id = null, latitude = null, longitude = null, distance_km = null, eta_minutes = null, location_label = null }) {
     if (!isSupabaseConfigured) throw new Error("Supabase not configured");
     const order_number = genOrderNumber();
 
@@ -18,6 +18,12 @@ export async function placeOrder({ customer_name, phone, address, table_number, 
             mode,
             status: "Received",
             total_amount,
+            user_id,
+            latitude,
+            longitude,
+            distance_km,
+            eta_minutes,
+            location_label,
         })
         .select()
         .single();

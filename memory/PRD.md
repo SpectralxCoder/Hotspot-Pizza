@@ -1,76 +1,76 @@
-# Hot Spot Pizza — PRD
+# Hot Spot Pizza — PRD (v2 update Feb 2026)
 
-## Original Problem Statement
-Build a full-stack modern pizza ordering website for "Hot Spot Pizza" — a pizza cafe brand. Premium light theme (whites, soft creams, warm reds). Customer ordering with QR-table-aware menu, cart, checkout (dine-in/delivery), order confirmation and live tracking. Admin dashboard with stats, active orders management, archive, QR code manager. Kitchen Display System. Real-time updates via Supabase Realtime. Pay on delivery only.
+## Current Iteration: User auth, admin menu CRUD, settings & ETA
 
-## Architecture
-- **Frontend**: React (CRA) + React Router + Tailwind + Shadcn/UI primitives + `@supabase/supabase-js` (direct DB + realtime) + `qrcode.react`
-- **Backend (FastAPI)**: Admin JWT auth (custom, bcrypt-hashed) — `/api/admin/login`, `/api/admin/verify`; admin seeded on startup from env vars
-- **Database**: Supabase Postgres (tables: `orders`, `order_items`, `archived_orders`) — schema in `/app/database/schema.sql`
-- **Auth**: Admin login is custom JWT (FastAPI). Customer flow has no auth.
+### What's new in v2 (just shipped)
+- **User Authentication** (Supabase Auth)
+  - Google sign-in (OAuth via Supabase)
+  - Phone OTP login (Supabase Phone Auth → Twilio)
+  - `/auth/login` page with both options; `/auth/callback` for OAuth return
+  - Login required before placing an order
+- **QR-aware mode locking**
+  - `?table=N` → only Dine-in available; table field is locked + read-only
+  - `?mode=delivery` → only Home Delivery available
+  - Both branches share same `/menu` and `/checkout` routes; UX adapts
+- **Table number validation**
+  - Max 20 (configurable via constant `MAX_TABLES`)
+  - Read-only when entered via QR
+- **Location picker (Leaflet + OpenStreetMap)**
+  - Map shown for delivery only
+  - "Use my location" button (browser geolocation)
+  - Drag-to-pin or click-to-pin
+  - Reverse geocode via Nominatim (no API key)
+- **ETA calculator**
+  - Hidden for dine-in
+  - For delivery: 15 + (qty × 2) + (distance_km × 3) → capped 20–60 min
+- **Admin Menu Manager** (`/admin/menu`)
+  - CRUD on items (name, description, category, price OR pizza sizes JSON, image, sort order)
+  - Image upload to Supabase Storage bucket `menu-images`
+  - Toggle "In stock" / "Out of stock"
+  - Toggle "Most popular" (manual override)
+  - "Seed default menu" button (idempotent — only fills if empty)
+- **Admin Settings** (`/admin/settings`)
+  - Open/Closed toggle (manual restaurant override)
+  - Editable opening hours (default Mon–Sun · 11:45 AM – 11:00 PM)
+  - Choose popular-mode: All-time vs Last 30 days
+- **Most-popular auto-calculation**
+  - Aggregates `order_items` + `archived_orders.order_data` per chosen window
+  - Top 5 items highlighted on customer menu with a "Most Popular" badge
+- **Confirm dialog component**
+  - Replaces all `window.confirm()` calls (admin orders archive)
+  - Toast notifications already in use everywhere — added `closeButton` prop
+- **Back button** in admin sidebar
+- **Out-of-stock state** on customer menu cards (overlay + disabled Add button)
+- **Restaurant-closed banner** on menu + checkout when outside hours OR admin toggled closed
 
-## User Personas
-1. **Customer (dine-in)** — Scans table QR → browses menu → adds items → checkout (name + auto-filled table) → tracks live status
-2. **Customer (delivery)** — Scans delivery QR (or visits site) → orders → checkout with phone + address → tracks live status
-3. **Admin/Owner** — Logs into `/admin` → views dashboard, manages orders, archives, prints table QR codes
-4. **Kitchen Staff** — Opens `/admin/kitchen` → simple ticket display, start/ready buttons
+### Required setup (user action)
+1. **Apply schema v2**: `/app/database/schema_v2.sql` in Supabase SQL Editor
+2. **Enable Google provider** in Supabase: Dashboard → Authentication → Providers → Google
+   - Add redirect URL: `https://pizza-order-hub-44.preview.emergentagent.com/auth/callback`
+   - You'll need a Google Cloud OAuth client ID + secret pasted into Supabase
+3. **Enable Phone provider** in Supabase: Dashboard → Authentication → Providers → Phone
+   - Add Twilio Account SID, Auth Token, Message Service SID OR Verify Service SID
+4. **Storage bucket** `menu-images` is created automatically by schema_v2.sql with public read + insert
 
-## Core Requirements (Static)
-- Light theme only; brand palette: cream (#FFFDF9), red (#E63946), orange (#F4A261), beige border (#F0E6DA)
-- Fonts: Playfair Display (headings) + Poppins (body) via Google Fonts
-- Real-time sync between customer tracker, admin orders, and KDS
-- QR per table 1–20 + Home Delivery (printable)
-- Pizza size selector (R/M/L) before adding to cart
-- Pay on Delivery only
+### Backend (unchanged)
+- FastAPI JWT admin (`/api/admin/login`, `/api/admin/verify`) — `hotspotadmin` / `pizza@123`
 
-## v1 Implemented (2026-02)
-- ✅ Light-theme landing with hero, featured slices, brand tagline
-- ✅ Tabbed menu with search & smooth-scroll category nav, 11 categories, 40+ items
-- ✅ Pizza size dialog (Regular/Medium/Large)
-- ✅ Floating cart with slide-in drawer + +/- quantity + persistent storage
-- ✅ Checkout flow with Dine-in/Delivery toggle (auto-filled when arriving via `?table=N` or `?mode=delivery`)
-- ✅ Order confirmation with live tracker (Received → Preparing → Ready → Delivered)
-- ✅ Customer order tracking page (subscribed to Supabase realtime)
-- ✅ Admin JWT login (FastAPI) with seeded admin
-- ✅ Admin Dashboard (active orders, today's count, revenue, AOV, top items)
-- ✅ Active Orders management with status dropdown + Mark Done → Archive
-- ✅ Archive with search/date filter
-- ✅ QR Code Manager (Tables 1–20 + Home Delivery, printable A4-friendly)
-- ✅ Kitchen Display System with color-coded tickets + Start/Ready actions
-- ✅ Supabase realtime via `postgres_changes` channels for orders & archive
-- ✅ Toast notifications (sonner) with cream/border styling
-- ✅ Responsive across mobile / tablet / desktop
-- ✅ data-testid attributes throughout for QA
+### File map
+- New: `/app/database/schema_v2.sql`
+- New: `/app/frontend/src/contexts/UserAuthContext.jsx`, `ConfirmContext.jsx`
+- New: `/app/frontend/src/pages/UserLogin.jsx`, `AuthCallback.jsx`, `AdminMenuManager.jsx`, `AdminSettings.jsx`
+- New: `/app/frontend/src/components/MapPicker.jsx`
+- New: `/app/frontend/src/lib/menuService.js`, `hours.js`, `seed.js`
+- Updated: `Menu.jsx` (reads from Supabase, popular badges, mode badge, closed banner)
+- Updated: `Checkout.jsx` (auth gate, mode lock, map, ETA, table cap)
+- Updated: `MenuItemCard.jsx` (out-of-stock + popular badge)
+- Updated: `AdminSidebar.jsx` (new links + Back button)
+- Updated: `AdminOrders.jsx` (custom confirm dialog)
+- Updated: `App.js` (new routes + UserAuthProvider + ConfirmProvider)
 
-## Prioritized Backlog
-### P0 — User setup (one-time)
-- Apply `/app/database/schema.sql` in Supabase SQL Editor
-
-### P1
-- Optional add-ons (Extra cheese / paneer / jalapeno) — architecture already supports via `size`+`name` composition; UI not yet built
-- "Done → auto-archive after 6h" cron (currently archives immediately on Mark Done)
-- Order receipt PDF download
-- Customer phone-based order history lookup
-
-### P2
-- PWA support (manifest, offline shell)
-- WhatsApp / SMS notifications on status change (Twilio integration)
-- Promo code / coupon support
-- Reviews / ratings collection after delivery
-
-## File Map
-- Backend: `/app/backend/server.py`
-- Frontend pages: `/app/frontend/src/pages/`
-- Frontend components: `/app/frontend/src/components/`
-- Supabase SQL: `/app/database/schema.sql`
-- Cart state: `/app/frontend/src/contexts/CartContext.jsx`
-- Admin auth state: `/app/frontend/src/contexts/AuthContext.jsx`
-- Supabase client + helpers: `/app/frontend/src/lib/supabase.js` + `/app/frontend/src/lib/orders.js`
-
-## Required Setup Steps (READ ME)
-1. Open Supabase Dashboard → SQL Editor → **New query** → paste contents of `/app/database/schema.sql` → Run.
-2. Verify tables `orders`, `order_items`, `archived_orders` exist under `public` schema.
-3. (Optional) Verify Realtime is enabled for those tables in Database → Replication.
-4. Open the live preview URL and test:
-   - Customer: `/menu?table=5` (dine-in) or `/menu?mode=delivery` (delivery)
-   - Admin: `/admin/login` with `hotspotadmin` / `pizza@123`
+### Backlog
+- P1: Customer "My Orders" page (history list via `user_id`)
+- P1: Admin restaurant location setter (map) — affects ETA distance baseline
+- P1: Auto-fill delivery address fields from reverse geocode
+- P2: WhatsApp/SMS status notifications via Twilio
+- P2: PWA install
