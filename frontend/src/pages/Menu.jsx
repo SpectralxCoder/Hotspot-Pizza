@@ -1,30 +1,33 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, MapPin, UtensilsCrossed, LogIn, LogOut, User, Clock } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Search, MapPin, UtensilsCrossed, Leaf } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CartDrawer from "../components/CartDrawer";
 import MenuItemCard from "../components/MenuItemCard";
-import { listMenuItems, subscribeMenuItems, getSettings, subscribeSettings, computePopularity } from "../lib/menuService";
-import { CATEGORIES, MENU as STATIC_MENU } from "../data/menu";
-import { useUserAuth } from "../contexts/UserAuthContext";
+import { listMenuItems, subscribeMenuItems, computePopularity } from "../lib/menuService";
+import { MENU as STATIC_MENU } from "../data/menu";
+import { useSettings } from "../contexts/SettingsContext";
 import { isRestaurantOpen, formatHours } from "../lib/hours";
-import { toast } from "sonner";
 
-const TABS = ["All", ...CATEGORIES];
+const SORT_OPTIONS = [
+    { id: "popular", label: "Most Popular" },
+    { id: "price_asc", label: "Price · Low → High" },
+    { id: "price_desc", label: "Price · High → Low" },
+    { id: "default", label: "Recommended" },
+];
 
 export default function Menu() {
     const [params] = useSearchParams();
     const tableParam = params.get("table");
     const modeParam = params.get("mode");
     const mode = tableParam ? "dine_in" : modeParam === "delivery" ? "delivery" : null;
-    const navigate = useNavigate();
-    const { user, signOut } = useUserAuth();
+    const { settings, categories } = useSettings();
 
     const [query, setQuery] = useState("");
     const [activeTab, setActiveTab] = useState("All");
+    const [sortBy, setSortBy] = useState("default");
     const [items, setItems] = useState([]);
-    const [settings, setSettings] = useState(null);
     const [popularSet, setPopularSet] = useState(new Set());
     const [loading, setLoading] = useState(true);
     const sectionRefs = useRef({});
@@ -43,24 +46,13 @@ export default function Menu() {
         try {
             const data = await listMenuItems();
             setItems(data.length ? data : adaptStatic());
-        } catch {
-            setItems(adaptStatic());
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const loadSettings = async () => {
-        try {
-            const s = await getSettings();
-            setSettings(s);
-        } catch { /* ignore */ }
+        } catch { setItems(adaptStatic()); }
+        finally { setLoading(false); }
     };
 
     const loadPopularity = async () => {
         try {
-            const s = await getSettings();
-            const popMap = await computePopularity(s?.popular_mode || "all_time");
+            const popMap = await computePopularity(settings?.popular_mode || "all_time");
             const sorted = [...popMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
             setPopularSet(new Set(sorted.map(([k]) => k)));
         } catch { /* ignore */ }
@@ -68,31 +60,39 @@ export default function Menu() {
 
     useEffect(() => {
         loadMenu();
-        loadSettings();
         loadPopularity();
-        const u1 = subscribeMenuItems(loadMenu);
-        const u2 = subscribeSettings(loadSettings);
-        return () => { u1?.(); u2?.(); };
-    }, []);
+        const u = subscribeMenuItems(loadMenu);
+        return u;
+    }, [settings?.popular_mode]);
 
     const open = isRestaurantOpen(settings);
+    const categoryNames = useMemo(() => categories.map((c) => c.name), [categories]);
+    const TABS = ["All", ...categoryNames];
+
+    const minPriceOf = (it) => Array.isArray(it.sizes) && it.sizes.length ? Math.min(...it.sizes.map((s) => s.price)) : it.price || 0;
 
     const filtered = useMemo(() => {
-        if (!query) return items;
-        const q = query.toLowerCase();
-        return items.filter((m) => m.name?.toLowerCase().includes(q) || m.description?.toLowerCase().includes(q));
-    }, [items, query]);
+        let list = items.filter((m) => {
+            if (!query) return true;
+            const q = query.toLowerCase();
+            return m.name?.toLowerCase().includes(q) || m.description?.toLowerCase().includes(q);
+        });
+        if (sortBy === "price_asc") list = [...list].sort((a, b) => minPriceOf(a) - minPriceOf(b));
+        if (sortBy === "price_desc") list = [...list].sort((a, b) => minPriceOf(b) - minPriceOf(a));
+        if (sortBy === "popular") list = [...list].sort((a, b) => Number(popularSet.has((b.name || "").toLowerCase())) - Number(popularSet.has((a.name || "").toLowerCase())));
+        return list;
+    }, [items, query, sortBy, popularSet]);
 
-    const visibleCategories = useMemo(() => (activeTab === "All" ? CATEGORIES : [activeTab]), [activeTab]);
+    const visibleCategories = useMemo(() => activeTab === "All" ? categoryNames : [activeTab], [activeTab, categoryNames]);
 
     const groupedByCategory = useMemo(() => {
         const g = {};
-        for (const c of CATEGORIES) g[c] = [];
+        for (const c of categoryNames) g[c] = [];
         for (const it of filtered) {
-            if (g[it.category]) g[it.category].push(toMenuShape(it, popularSet.has((it.name || "").toLowerCase())));
+            if (g[it.category]) g[it.category].push(toMenuShape(it, popularSet.has((it.name || "").toLowerCase()), !open));
         }
         return g;
-    }, [filtered, popularSet]);
+    }, [filtered, categoryNames, popularSet, open]);
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -100,12 +100,21 @@ export default function Menu() {
             requestAnimationFrame(() => {
                 const el = sectionRefs.current[tab];
                 if (el) {
-                    const top = el.getBoundingClientRect().top + window.scrollY - 100;
+                    const top = el.getBoundingClientRect().top + window.scrollY - 120;
                     window.scrollTo({ top, behavior: "smooth" });
                 }
             });
         } else {
             window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    };
+
+    // Mouse wheel → horizontal scroll for tabs
+    const tabRowRef = useRef(null);
+    const onWheelTabs = (e) => {
+        if (!tabRowRef.current) return;
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+            tabRowRef.current.scrollLeft += e.deltaY;
         }
     };
 
@@ -115,7 +124,7 @@ export default function Menu() {
 
             {!open && (
                 <div className="bg-brand text-white text-center text-sm font-semibold py-2.5" data-testid="closed-banner">
-                    Restaurant is currently closed. Hours: {formatHours(settings)}
+                    Currently closed · Items unavailable for ordering · Hours: {formatHours(settings)}
                 </div>
             )}
 
@@ -127,6 +136,9 @@ export default function Menu() {
                         <p className="text-base md:text-lg text-muted-foreground mt-4 max-w-md">
                             Pick your weapon. We&apos;ll fire it up and get it to you faster than your delivery app can refresh.
                         </p>
+                        <span className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                            <Leaf className="w-3 h-3" /> 100% Pure Veg
+                        </span>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                         {mode === "dine_in" && (
@@ -139,45 +151,33 @@ export default function Menu() {
                                 <MapPin className="w-3.5 h-3.5" /> Home Delivery
                             </span>
                         )}
-                        {user ? (
-                            <div className="flex items-center gap-2 text-xs">
-                                <span className="inline-flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> {user.email || user.phone}</span>
-                                <button onClick={async () => { await signOut(); toast.success("Signed out"); }} className="text-muted-foreground hover:text-brand inline-flex items-center gap-1" data-testid="signout-button">
-                                    <LogOut className="w-3 h-3" /> Sign out
-                                </button>
-                            </div>
-                        ) : (
-                            <button onClick={() => navigate("/auth/login")} className="text-xs text-brand font-semibold inline-flex items-center gap-1" data-testid="user-signin-link">
-                                <LogIn className="w-3.5 h-3.5" /> Sign in to track orders
-                            </button>
-                        )}
                     </div>
                 </div>
 
-                <div className="relative mt-8 max-w-3xl">
-                    <Search className="w-5 h-5 text-muted-foreground absolute left-5 top-1/2 -translate-y-1/2" />
-                    <input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search burgers, pizzas, wings..."
-                        className="w-full pl-14 pr-5 py-4 rounded-full bg-white text-base focus:outline-none focus:ring-2 focus:ring-brand/30 shadow-soft"
-                        data-testid="menu-search-input"
-                    />
+                <div className="relative mt-8 max-w-3xl flex items-center gap-3">
+                    <div className="relative flex-1">
+                        <Search className="w-5 h-5 text-muted-foreground absolute left-5 top-1/2 -translate-y-1/2" />
+                        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search burgers, pizzas..."
+                            className="w-full pl-14 pr-5 py-4 rounded-full bg-white text-base focus:outline-none focus:ring-2 focus:ring-brand/30 shadow-soft" data-testid="menu-search-input" />
+                    </div>
+                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                        className="px-4 py-4 rounded-full bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand/30 shadow-soft"
+                        data-testid="menu-sort-select">
+                        {SORT_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                    </select>
                 </div>
             </section>
 
             <div className="sticky top-16 z-30 bg-cream/95 backdrop-blur">
                 <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                    <div ref={tabRowRef} onWheel={onWheelTabs} className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollSnapType: "x mandatory" }}>
                         {TABS.map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => handleTabClick(tab)}
-                                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                            <button key={tab} onClick={() => handleTabClick(tab)}
+                                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-semibold transition-all shrink-0 ${
                                     activeTab === tab ? "bg-brand text-white shadow-soft" : "bg-white text-foreground hover:bg-warmBeige/50"
                                 }`}
-                                data-testid={`category-tab-${tab.replace(/\s+/g, "-").toLowerCase()}`}
-                            >
+                                style={{ scrollSnapAlign: "start" }}
+                                data-testid={`category-tab-${tab.replace(/\s+/g, "-").toLowerCase()}`}>
                                 {tab}
                             </button>
                         ))}
@@ -188,21 +188,14 @@ export default function Menu() {
             <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 pb-12">
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="bg-white rounded-[24px] h-80 animate-pulse" />
-                        ))}
+                        {Array.from({ length: 6 }).map((_, i) => (<div key={i} className="bg-white rounded-[24px] h-80 animate-pulse" />))}
                     </div>
                 ) : (
                     visibleCategories.map((cat) => {
                         const list = groupedByCategory[cat] || [];
                         if (list.length === 0) return null;
                         return (
-                            <section
-                                key={cat}
-                                ref={(el) => (sectionRefs.current[cat] = el)}
-                                className="mb-14"
-                                data-testid={`category-section-${cat.replace(/\s+/g, "-").toLowerCase()}`}
-                            >
+                            <section key={cat} ref={(el) => (sectionRefs.current[cat] = el)} className="mb-14" data-testid={`category-section-${cat.replace(/\s+/g, "-").toLowerCase()}`}>
                                 {activeTab === "All" && (
                                     <div className="flex items-end gap-3 mb-6">
                                         <h2 className="font-display text-3xl md:text-4xl font-extrabold">{cat}</h2>
@@ -231,32 +224,20 @@ export default function Menu() {
 }
 
 function adaptStatic() {
-    // Fallback when menu_items table is empty — adapt static menu shape to DB shape
     return STATIC_MENU.map((m, idx) => ({
-        id: m.id,
-        name: m.name,
-        description: m.description,
-        category: m.category,
-        price: m.price ?? null,
-        sizes: m.sizes ?? null,
-        image_url: m.image,
-        in_stock: true,
-        is_popular: false,
-        sort_order: idx,
+        id: m.id, name: m.name, description: m.description, category: m.category,
+        price: m.price ?? null, sizes: m.sizes ?? null, image_url: m.image,
+        in_stock: true, is_popular: false, sort_order: idx, discount_price: null,
     }));
 }
 
-function toMenuShape(row, isPopular) {
+function toMenuShape(row, isPopular, restaurantClosed) {
     return {
-        id: row.id,
-        name: row.name,
-        description: row.description || "",
-        category: row.category,
-        price: row.price,
-        sizes: row.sizes,
-        image: row.image_url,
-        in_stock: row.in_stock !== false,
-        is_popular: row.is_popular || isPopular,
-        veg: true,
+        id: row.id, name: row.name, description: row.description || "", category: row.category,
+        price: row.price, sizes: row.sizes, image: row.image_url,
+        discount_price: row.discount_price,
+        in_stock: row.in_stock !== false && !restaurantClosed,
+        unavailable_reason: restaurantClosed ? "Restaurant is closed" : (row.in_stock === false ? "Out of stock" : null),
+        is_popular: row.is_popular || isPopular, veg: true,
     };
 }

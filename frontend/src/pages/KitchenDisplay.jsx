@@ -16,8 +16,8 @@ export default function KitchenDisplay() {
     const load = async () => {
         try {
             const data = await listActiveOrders();
-            // Only show Received & Preparing on KDS
-            setOrders(data.filter((o) => ["Received", "Preparing", "Ready"].includes(o.status)));
+            // Show Accepted, Preparing, Out For Delivery on KDS
+            setOrders(data.filter((o) => ["Accepted", "Preparing", "Out For Delivery"].includes(o.status)));
         } catch (e) {
             console.error(e);
         }
@@ -53,14 +53,14 @@ export default function KitchenDisplay() {
                             key={o.id}
                             className="bg-white rounded-2xl border-2 shadow-soft overflow-hidden"
                             style={{
-                                borderColor: o.status === "Preparing" ? "#F59E0B" : o.status === "Ready" ? "#10B981" : "#3B82F6",
+                                borderColor: o.status === "Preparing" ? "#F59E0B" : o.status === "Out For Delivery" ? "#10B981" : "#3B82F6",
                             }}
                             data-testid={`kds-ticket-${o.id}`}
                         >
                             <div
                                 className="px-4 py-3 flex items-center justify-between text-white"
                                 style={{
-                                    background: o.status === "Preparing" ? "#F59E0B" : o.status === "Ready" ? "#10B981" : "#3B82F6",
+                                    background: o.status === "Preparing" ? "#F59E0B" : o.status === "Out For Delivery" ? "#10B981" : "#3B82F6",
                                 }}
                             >
                                 <p className="font-display text-lg leading-none">{o.order_number}</p>
@@ -79,7 +79,7 @@ export default function KitchenDisplay() {
                                     ))}
                                 </ul>
                                 <div className="mt-4 flex gap-2">
-                                    {o.status === "Received" && (
+                                    {o.status === "Accepted" && (
                                         <button
                                             onClick={async () => {
                                                 await updateOrderStatus(o.id, "Preparing");
@@ -94,18 +94,18 @@ export default function KitchenDisplay() {
                                     {o.status === "Preparing" && (
                                         <button
                                             onClick={async () => {
-                                                await updateOrderStatus(o.id, "Ready");
-                                                toast.success("Marked ready");
+                                                await updateOrderStatus(o.id, "Out For Delivery");
+                                                toast.success("Sent out");
                                             }}
                                             className="flex-1 bg-emerald-600 text-white text-sm px-3 py-2 rounded-full hover:bg-emerald-700 inline-flex items-center justify-center gap-1.5"
                                             data-testid={`kds-ready-${o.id}`}
                                         >
-                                            <CheckCheck className="w-4 h-4" /> Mark Ready
+                                            <CheckCheck className="w-4 h-4" /> Out for delivery
                                         </button>
                                     )}
-                                    {o.status === "Ready" && (
+                                    {o.status === "Out For Delivery" && (
                                         <span className="flex-1 text-emerald-700 bg-emerald-50 border border-emerald-200 text-sm py-2 rounded-full inline-flex items-center justify-center gap-1.5">
-                                            <CheckCheck className="w-4 h-4" /> Ready
+                                            <CheckCheck className="w-4 h-4" /> On the way
                                         </span>
                                     )}
                                 </div>

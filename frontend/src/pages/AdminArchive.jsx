@@ -42,8 +42,8 @@ export default function AdminArchive() {
         <div className="space-y-6" data-testid="admin-archive-page">
             <div className="flex items-end justify-between flex-wrap gap-4">
                 <div>
-                    <h1 className="font-display text-3xl md:text-4xl">Archive</h1>
-                    <p className="text-sm text-muted-foreground">Completed orders for your records.</p>
+                    <h1 className="font-display text-3xl md:text-4xl font-extrabold">Order History</h1>
+                    <p className="text-sm text-muted-foreground">Completed orders.</p>
                 </div>
                 <div className="relative">
                     <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />

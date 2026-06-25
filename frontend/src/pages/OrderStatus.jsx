@@ -55,7 +55,13 @@ export default function OrderStatus() {
                         </div>
                     </div>
                 </div>
-                <OrderTracker status={order.status} />
+                <OrderTracker status={order.status} rejection_reason={order.rejection_reason} mode={order.mode} />
+                {order.mode === "delivery" && order.eta_minutes && order.status !== "Rejected" && order.status !== "Delivered" && (
+                    <div className="bg-white rounded-2xl p-4 mt-4 text-sm" data-testid="eta-live">
+                        Your order will be here in <span className="font-extrabold text-brand">{order.eta_minutes} mins</span>
+                        {order.distance_km ? ` (${order.distance_km} km from kitchen)` : ""}.
+                    </div>
+                )}
             </main>
             <Footer />
         </div>

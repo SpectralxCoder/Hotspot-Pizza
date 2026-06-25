@@ -1,21 +1,55 @@
 import { supabase, isSupabaseConfigured } from "./supabase";
 
-// Categories displayed in admin / customer menu
-export const CATEGORIES = [
-    "Combos", "Snacks", "Desserts", "Garlic Bread", "Shakes",
-    "Simple Veg Pizza", "Veg Special", "Veg Treat", "Feast Special",
-    "Hot Pizza Special", "Burgers",
-];
-
-// "Table does not exist" error code from PostgREST when schema_v2.sql isn't applied
 const isMissingTable = (err) => err?.code === "PGRST205" || /could not find the table/i.test(err?.message || "");
 
+// === Categories ===
+export async function listCategories() {
+    if (!isSupabaseConfigured) return [];
+    const { data, error } = await supabase.from("categories").select("*").order("sort_order");
+    if (error) {
+        if (isMissingTable(error)) return [];
+        throw error;
+    }
+    return data || [];
+}
+
+export async function createCategory({ name, sort_order = 0 }) {
+    const { data, error } = await supabase.from("categories").insert({ name, sort_order }).select().single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateCategory(id, patch) {
+    const { data, error } = await supabase.from("categories").update(patch).eq("id", id).select().single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteCategory(id, name) {
+    // Refuse if any item still uses it
+    const { count, error: ce } = await supabase.from("menu_items").select("id", { count: "exact", head: true }).eq("category", name);
+    if (ce && !isMissingTable(ce)) throw ce;
+    if ((count || 0) > 0) throw new Error("Category not empty — move or delete its items first.");
+    const { error } = await supabase.from("categories").delete().eq("id", id);
+    if (error) throw error;
+    return true;
+}
+
+export function subscribeCategories(onChange) {
+    if (!isSupabaseConfigured) return () => {};
+    try {
+        const ch = supabase
+            .channel("categories")
+            .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, onChange)
+            .subscribe((s, err) => { if (err) console.warn("categories realtime:", err?.message || s); });
+        return () => { try { supabase.removeChannel(ch); } catch { /* ignore */ } };
+    } catch { return () => {}; }
+}
+
+// === Menu items ===
 export async function listMenuItems() {
     if (!isSupabaseConfigured) return [];
-    const { data, error } = await supabase
-        .from("menu_items")
-        .select("*")
-        .order("sort_order", { ascending: true });
+    const { data, error } = await supabase.from("menu_items").select("*").order("sort_order");
     if (error) {
         if (isMissingTable(error)) return [];
         throw error;
@@ -29,14 +63,9 @@ export function subscribeMenuItems(onChange) {
         const ch = supabase
             .channel("menu-items")
             .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, onChange)
-            .subscribe((status, err) => {
-                if (err) console.warn("menu_items realtime:", err?.message || status);
-            });
+            .subscribe((s, err) => { if (err) console.warn("menu_items realtime:", err?.message || s); });
         return () => { try { supabase.removeChannel(ch); } catch { /* ignore */ } };
-    } catch (e) {
-        console.warn("subscribeMenuItems failed:", e?.message);
-        return () => {};
-    }
+    } catch { return () => {}; }
 }
 
 export async function createMenuItem(payload) {
@@ -57,27 +86,46 @@ export async function deleteMenuItem(id) {
     return true;
 }
 
+export async function bulkUpdate(ids, patch) {
+    const { error } = await supabase.from("menu_items").update(patch).in("id", ids);
+    if (error) throw error;
+    return true;
+}
+
+export async function bulkAdjustPrice(ids, percent) {
+    // Adjust both price and sizes by percent (e.g. +10 or -5)
+    const factor = 1 + percent / 100;
+    const { data, error } = await supabase.from("menu_items").select("id, price, sizes, discount_price").in("id", ids);
+    if (error) throw error;
+    for (const it of data || []) {
+        const patch = {};
+        if (it.price != null) patch.price = round2(Number(it.price) * factor);
+        if (it.discount_price != null) patch.discount_price = round2(Number(it.discount_price) * factor);
+        if (Array.isArray(it.sizes)) {
+            patch.sizes = it.sizes.map((s) => ({ ...s, price: round2(Number(s.price) * factor) }));
+        }
+        await supabase.from("menu_items").update(patch).eq("id", it.id);
+    }
+    return true;
+}
+
+function round2(n) { return Math.round(n * 100) / 100; }
+
 export async function uploadMenuImage(file) {
     if (!isSupabaseConfigured) throw new Error("Supabase not configured");
     const ext = file.name.split(".").pop();
     const path = `items/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from("menu-images").upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-    });
+    const { error } = await supabase.storage.from("menu-images").upload(path, file, { cacheControl: "3600", upsert: false });
     if (error) throw error;
     const { data } = supabase.storage.from("menu-images").getPublicUrl(path);
     return { publicUrl: data.publicUrl, path };
 }
 
-// === Restaurant settings ===
+// === Settings ===
 export async function getSettings() {
     if (!isSupabaseConfigured) return null;
     const { data, error } = await supabase.from("restaurant_settings").select("*").eq("id", 1).maybeSingle();
-    if (error) {
-        if (isMissingTable(error)) return null;
-        throw error;
-    }
+    if (error) { if (isMissingTable(error)) return null; throw error; }
     return data;
 }
 
@@ -98,14 +146,9 @@ export function subscribeSettings(onChange) {
         const ch = supabase
             .channel("settings")
             .on("postgres_changes", { event: "*", schema: "public", table: "restaurant_settings" }, onChange)
-            .subscribe((status, err) => {
-                if (err) console.warn("settings realtime:", err?.message || status);
-            });
+            .subscribe((s, err) => { if (err) console.warn("settings realtime:", err?.message || s); });
         return () => { try { supabase.removeChannel(ch); } catch { /* ignore */ } };
-    } catch (e) {
-        console.warn("subscribeSettings failed:", e?.message);
-        return () => {};
-    }
+    } catch { return () => {}; }
 }
 
 // === Popularity ===
@@ -142,7 +185,6 @@ export async function computePopularity(mode = "all_time") {
     return map;
 }
 
-// Helper exposed for UI: does the v2 schema appear to be applied?
 export async function isV2SchemaApplied() {
     if (!isSupabaseConfigured) return false;
     const { error } = await supabase.from("menu_items").select("id", { head: true, count: "exact" }).limit(1);

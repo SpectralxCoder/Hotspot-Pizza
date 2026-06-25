@@ -1,76 +1,65 @@
-# Hot Spot Pizza — PRD (v2 update Feb 2026)
+# Hot Spot Pizza — PRD (v3 — Feb 2026)
 
-## Current Iteration: User auth, admin menu CRUD, settings & ETA
+## Recent iteration: 21-item fix list shipped
 
-### What's new in v2 (just shipped)
-- **User Authentication** (Supabase Auth)
-  - Google sign-in (OAuth via Supabase)
-  - Phone OTP login (Supabase Phone Auth → Twilio)
-  - `/auth/login` page with both options; `/auth/callback` for OAuth return
-  - Login required before placing an order
-- **QR-aware mode locking**
-  - `?table=N` → only Dine-in available; table field is locked + read-only
-  - `?mode=delivery` → only Home Delivery available
-  - Both branches share same `/menu` and `/checkout` routes; UX adapts
-- **Table number validation**
-  - Max 20 (configurable via constant `MAX_TABLES`)
-  - Read-only when entered via QR
-- **Location picker (Leaflet + OpenStreetMap)**
-  - Map shown for delivery only
-  - "Use my location" button (browser geolocation)
-  - Drag-to-pin or click-to-pin
-  - Reverse geocode via Nominatim (no API key)
-- **ETA calculator**
-  - Hidden for dine-in
-  - For delivery: 15 + (qty × 2) + (distance_km × 3) → capped 20–60 min
-- **Admin Menu Manager** (`/admin/menu`)
-  - CRUD on items (name, description, category, price OR pizza sizes JSON, image, sort order)
-  - Image upload to Supabase Storage bucket `menu-images`
-  - Toggle "In stock" / "Out of stock"
-  - Toggle "Most popular" (manual override)
-  - "Seed default menu" button (idempotent — only fills if empty)
-- **Admin Settings** (`/admin/settings`)
-  - Open/Closed toggle (manual restaurant override)
-  - Editable opening hours (default Mon–Sun · 11:45 AM – 11:00 PM)
-  - Choose popular-mode: All-time vs Last 30 days
-- **Most-popular auto-calculation**
-  - Aggregates `order_items` + `archived_orders.order_data` per chosen window
-  - Top 5 items highlighted on customer menu with a "Most Popular" badge
-- **Confirm dialog component**
-  - Replaces all `window.confirm()` calls (admin orders archive)
-  - Toast notifications already in use everywhere — added `closeButton` prop
-- **Back button** in admin sidebar
-- **Out-of-stock state** on customer menu cards (overlay + disabled Add button)
-- **Restaurant-closed banner** on menu + checkout when outside hours OR admin toggled closed
+### Customer experience
+- ✅ User sign-in removed completely (UserAuth context, /auth pages deleted, login gate removed)
+- ✅ Toast notifications moved to **bottom-center** with closeButton
+- ✅ Free delivery banner on landing: "FREE within 3 km · Min order ₹200"
+- ✅ Landing footer reads shop name, address, contact_number from Settings (live)
+- ✅ Pure Veg badge in hero, menu, footer, featured cards
+- ✅ Menu sort selector: Most Popular · Price Low→High · Price High→Low · Recommended
+- ✅ Category pills horizontally scrollable + mouse-wheel scrollable + scroll-snap
+- ✅ Menu items show "Unavailable" overlay + disabled "Unavailable" button when restaurant is closed
+- ✅ Discount price renders with original crossed out (cart + menu)
+- ✅ ETA: distance (Haversine) ÷ 32 kmph × 60 + 20 min prep → "Your order will be here in N mins"
+- ✅ Delivery validates: min ₹200 order, max 3 km radius, address + pin on map required
+- ✅ Mode locking (QR-driven) + table number readOnly when scanned; URL-tampered tables redirect home
+- ✅ Confirmation/Tracker shows "Accepted" / "Rejected (with reason)"
 
-### Required setup (user action)
-1. **Apply schema v2**: `/app/database/schema_v2.sql` in Supabase SQL Editor
-2. **Enable Google provider** in Supabase: Dashboard → Authentication → Providers → Google
-   - Add redirect URL: `https://pizza-order-hub-44.preview.emergentagent.com/auth/callback`
-   - You'll need a Google Cloud OAuth client ID + secret pasted into Supabase
-3. **Enable Phone provider** in Supabase: Dashboard → Authentication → Providers → Phone
-   - Add Twilio Account SID, Auth Token, Message Service SID OR Verify Service SID
-4. **Storage bucket** `menu-images` is created automatically by schema_v2.sql with public read + insert
+### Admin
+- ✅ Mobile nav drawer with hamburger trigger on admin pages
+- ✅ Back button → returns to landing (`/`), not browser history
+- ✅ Dashboard: "Hello, {Admin Name}" greeting (uses `admin_display_name`)
+- ✅ Dashboard time-range filter: Today / Week / Month / 3M / 6M / Year / All-time — all stats update
+- ✅ New order flow: Accepted → Preparing → Out For Delivery → Delivered (auto-archives on Delivered)
+- ✅ "Mark Done" removed; archive happens automatically when status hits "Delivered"
+- ✅ Reject order button + rejection reason dialog
+- ✅ Menu Manager:
+  - "Sort order" renamed to **Display Position**
+  - Old JSON sizes field replaced by friendly multi-line input: `Size: small, Price: 200`
+  - Discount price field added (shows Sale badge + crossed-out original)
+  - Multi-select with bulk: mark available/unavailable, ± price %, delete
+- ✅ Categories CRUD page (`/admin/categories`) — add, rename, reorder, delete (only if empty)
+- ✅ QR Codes: dynamic from `num_tables` (1–N), per-QR Print button, Print All
+- ✅ Settings overhaul:
+  - Shop name (read-only)
+  - Address (textarea) + GPS lat/lng + "Use my GPS" + map picker
+  - Contact number editable
+  - Number of tables editable
+  - Opening hours with validation (start ≠ end)
+  - "Open · click to close" toggle works both ways
+  - All saves emit success/error toasts
+- ✅ Order Archive → renamed to "Order History"
+- ✅ Realtime subscriptions resilient (no more `[object Object]` errors)
 
-### Backend (unchanged)
-- FastAPI JWT admin (`/api/admin/login`, `/api/admin/verify`) — `hotspotadmin` / `pizza@123`
+### Schema updates required
+**Apply `/app/database/schema_v3.sql`** in Supabase SQL Editor:
+- Extends `restaurant_settings`: shop_name, address, shop_lat/lng, contact_number, num_tables, min_order_amount, delivery_radius_km, admin_display_name
+- New table: `categories`
+- `menu_items`: adds `discount_price`
+- `orders`: status check now includes Accepted/Preparing/Out For Delivery/Delivered/Rejected; new `rejection_reason` column
+- Seeds 11 default categories
 
-### File map
-- New: `/app/database/schema_v2.sql`
-- New: `/app/frontend/src/contexts/UserAuthContext.jsx`, `ConfirmContext.jsx`
-- New: `/app/frontend/src/pages/UserLogin.jsx`, `AuthCallback.jsx`, `AdminMenuManager.jsx`, `AdminSettings.jsx`
-- New: `/app/frontend/src/components/MapPicker.jsx`
-- New: `/app/frontend/src/lib/menuService.js`, `hours.js`, `seed.js`
-- Updated: `Menu.jsx` (reads from Supabase, popular badges, mode badge, closed banner)
-- Updated: `Checkout.jsx` (auth gate, mode lock, map, ETA, table cap)
-- Updated: `MenuItemCard.jsx` (out-of-stock + popular badge)
-- Updated: `AdminSidebar.jsx` (new links + Back button)
-- Updated: `AdminOrders.jsx` (custom confirm dialog)
-- Updated: `App.js` (new routes + UserAuthProvider + ConfirmProvider)
+### File map (new/major)
+- New: `lib/hours.js` (ETA + restaurant location + free delivery constants)
+- New: `contexts/SettingsContext.jsx` (single source of truth for settings + categories)
+- New: `pages/AdminCategories.jsx`
+- Rebuilt: `AdminSettings.jsx`, `AdminMenuManager.jsx`, `AdminOrders.jsx`, `AdminDashboard.jsx`, `AdminLayout.jsx` (mobile drawer), `AdminQRCodes.jsx`, `Checkout.jsx`, `Menu.jsx`, `MenuItemCard.jsx`, `Landing.jsx`, `Footer.jsx`, `Navbar.jsx`, `OrderTracker.jsx`, `Confirmation.jsx`, `lib/menuService.js`, `lib/orders.js`
+- Deleted: `UserAuthContext.jsx`, `UserLogin.jsx`, `AuthCallback.jsx`, `AdminSidebar.jsx` (folded into AdminLayout)
 
 ### Backlog
-- P1: Customer "My Orders" page (history list via `user_id`)
-- P1: Admin restaurant location setter (map) — affects ETA distance baseline
-- P1: Auto-fill delivery address fields from reverse geocode
-- P2: WhatsApp/SMS status notifications via Twilio
-- P2: PWA install
+- P1: KDS responsive layout for tablet
+- P1: Toast actions ("Undo" archive on accidental delivery)
+- P2: Daily revenue chart on dashboard
+- P2: Pagination on Order History

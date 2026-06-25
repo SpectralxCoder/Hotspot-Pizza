@@ -1,11 +1,16 @@
 import { supabase, isSupabaseConfigured, genOrderNumber } from "./supabase";
 
-export const ORDER_STATUSES = ["Received", "Preparing", "Ready", "Delivered", "Done"];
-export const ACTIVE_STATUSES = ["Received", "Preparing", "Ready", "Delivered"];
+export const ORDER_STATUSES = ["Accepted", "Preparing", "Out For Delivery", "Delivered"];
+export const ACTIVE_STATUSES = ["Accepted", "Preparing", "Out For Delivery"];
 
-export async function placeOrder({ customer_name, phone, address, table_number, mode, items, total_amount, user_id = null, latitude = null, longitude = null, distance_km = null, eta_minutes = null, location_label = null }) {
+export async function placeOrder({
+    customer_name, phone, address, table_number, mode, items, total_amount,
+    latitude = null, longitude = null, distance_km = null, eta_minutes = null, location_label = null,
+    is_open = true,
+}) {
     if (!isSupabaseConfigured) throw new Error("Supabase not configured");
     const order_number = genOrderNumber();
+    const initialStatus = is_open ? "Accepted" : "Received";
 
     const { data: orderRow, error: orderErr } = await supabase
         .from("orders")
@@ -16,9 +21,8 @@ export async function placeOrder({ customer_name, phone, address, table_number, 
             address: address || null,
             table_number: table_number ?? null,
             mode,
-            status: "Received",
+            status: initialStatus,
             total_amount,
-            user_id,
             latitude,
             longitude,
             distance_km,
@@ -65,44 +69,53 @@ export async function listActiveOrders() {
     return data || [];
 }
 
-export async function listAllOrders() {
+export async function listAllOrders(sinceIso = null) {
     if (!isSupabaseConfigured) return [];
-    const { data, error } = await supabase
+    let q = supabase
         .from("orders")
         .select("*, order_items(*)")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(1000);
+    if (sinceIso) q = q.gte("created_at", sinceIso);
+    const { data, error } = await q;
     if (error) throw error;
     return data || [];
 }
 
-export async function updateOrderStatus(id, status) {
+export async function updateOrderStatus(id, status, extra = {}) {
     if (!isSupabaseConfigured) throw new Error("Supabase not configured");
-    const { data, error } = await supabase
+    const { data: updated, error } = await supabase
         .from("orders")
-        .update({ status })
+        .update({ status, ...extra })
         .eq("id", id)
-        .select()
+        .select("*, order_items(*)")
         .single();
     if (error) throw error;
-    return data;
+    // Auto-archive on Delivered
+    if (status === "Delivered") {
+        await archiveOrder(updated, { skipDelete: false, skipStatusUpdate: true });
+    }
+    return updated;
 }
 
-export async function archiveOrder(order) {
+export async function rejectOrder(id, reason) {
+    return updateOrderStatus(id, "Rejected", { rejection_reason: reason || null });
+}
+
+export async function archiveOrder(order, { skipDelete = false, skipStatusUpdate = false } = {}) {
     if (!isSupabaseConfigured) throw new Error("Supabase not configured");
-    // First mark as Done
-    await supabase.from("orders").update({ status: "Done" }).eq("id", order.id);
-    // Copy to archive
-    const { error: archErr } = await supabase.from("archived_orders").insert({
+    if (!skipStatusUpdate) {
+        await supabase.from("orders").update({ status: "Delivered" }).eq("id", order.id);
+    }
+    await supabase.from("archived_orders").insert({
         original_order_id: order.id,
         customer_name: order.customer_name,
         order_data: order,
         completed_at: new Date().toISOString(),
     });
-    if (archErr) throw archErr;
-    // Remove the active order
-    const { error: delErr } = await supabase.from("orders").delete().eq("id", order.id);
-    if (delErr) throw delErr;
+    if (!skipDelete) {
+        await supabase.from("orders").delete().eq("id", order.id);
+    }
     return true;
 }
 
@@ -119,32 +132,36 @@ export async function listArchive() {
 
 export function subscribeOrders(onChange) {
     if (!isSupabaseConfigured) return () => {};
-    const channel = supabase
-        .channel("orders-feed")
-        .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => onChange())
-        .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => onChange())
-        .subscribe();
-    return () => supabase.removeChannel(channel);
+    try {
+        const channel = supabase
+            .channel("orders-feed")
+            .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => onChange())
+            .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => onChange())
+            .subscribe((s, err) => { if (err) console.warn("orders realtime:", err?.message || s); });
+        return () => { try { supabase.removeChannel(channel); } catch { /* ignore */ } };
+    } catch (e) { console.warn(e?.message); return () => {}; }
 }
 
 export function subscribeArchive(onChange) {
     if (!isSupabaseConfigured) return () => {};
-    const channel = supabase
-        .channel("archive-feed")
-        .on("postgres_changes", { event: "*", schema: "public", table: "archived_orders" }, () => onChange())
-        .subscribe();
-    return () => supabase.removeChannel(channel);
+    try {
+        const channel = supabase
+            .channel("archive-feed")
+            .on("postgres_changes", { event: "*", schema: "public", table: "archived_orders" }, () => onChange())
+            .subscribe((s, err) => { if (err) console.warn("archive realtime:", err?.message || s); });
+        return () => { try { supabase.removeChannel(channel); } catch { /* ignore */ } };
+    } catch (e) { console.warn(e?.message); return () => {}; }
 }
 
 export function subscribeOrderById(id, onUpdate) {
     if (!isSupabaseConfigured) return () => {};
-    const channel = supabase
-        .channel(`order-${id}`)
-        .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "orders", filter: `id=eq.${id}` },
-            (payload) => onUpdate(payload.new)
-        )
-        .subscribe();
-    return () => supabase.removeChannel(channel);
+    try {
+        const channel = supabase
+            .channel(`order-${id}`)
+            .on("postgres_changes",
+                { event: "*", schema: "public", table: "orders", filter: `id=eq.${id}` },
+                (payload) => onUpdate(payload.new))
+            .subscribe((s, err) => { if (err) console.warn("order realtime:", err?.message || s); });
+        return () => { try { supabase.removeChannel(channel); } catch { /* ignore */ } };
+    } catch (e) { console.warn(e?.message); return () => {}; }
 }

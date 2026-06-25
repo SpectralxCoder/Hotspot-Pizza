@@ -5,8 +5,8 @@ import { Toaster } from "sonner";
 
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
-import { UserAuthProvider } from "./contexts/UserAuthContext";
 import { ConfirmProvider } from "./contexts/ConfirmContext";
+import { SettingsProvider } from "./contexts/SettingsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import Landing from "./pages/Landing";
@@ -14,8 +14,6 @@ import Menu from "./pages/Menu";
 import Checkout from "./pages/Checkout";
 import Confirmation from "./pages/Confirmation";
 import OrderStatus from "./pages/OrderStatus";
-import UserLogin from "./pages/UserLogin";
-import AuthCallback from "./pages/AuthCallback";
 import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./pages/AdminLayout";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -23,6 +21,7 @@ import AdminOrders from "./pages/AdminOrders";
 import AdminArchive from "./pages/AdminArchive";
 import AdminQRCodes from "./pages/AdminQRCodes";
 import AdminMenuManager from "./pages/AdminMenuManager";
+import AdminCategories from "./pages/AdminCategories";
 import AdminSettings from "./pages/AdminSettings";
 import KitchenDisplay from "./pages/KitchenDisplay";
 
@@ -30,8 +29,8 @@ export default function App() {
     return (
         <div className="App">
             <ConfirmProvider>
-                <AuthProvider>
-                    <UserAuthProvider>
+                <SettingsProvider>
+                    <AuthProvider>
                         <CartProvider>
                             <BrowserRouter>
                                 <Routes>
@@ -40,9 +39,6 @@ export default function App() {
                                     <Route path="/checkout" element={<Checkout />} />
                                     <Route path="/order/:id/confirmation" element={<Confirmation />} />
                                     <Route path="/order/:id" element={<OrderStatus />} />
-
-                                    <Route path="/auth/login" element={<UserLogin />} />
-                                    <Route path="/auth/callback" element={<AuthCallback />} />
 
                                     <Route path="/admin/login" element={<AdminLogin />} />
                                     <Route
@@ -60,15 +56,15 @@ export default function App() {
                                         <Route path="qrcodes" element={<AdminQRCodes />} />
                                         <Route path="kitchen" element={<KitchenDisplay />} />
                                         <Route path="menu" element={<AdminMenuManager />} />
+                                        <Route path="categories" element={<AdminCategories />} />
                                         <Route path="settings" element={<AdminSettings />} />
                                     </Route>
 
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
                                 <Toaster
-                                    position="top-right"
+                                    position="bottom-center"
                                     closeButton
-                                    richColors={false}
                                     toastOptions={{
                                         style: {
                                             background: "#FFFFFF",
@@ -80,8 +76,8 @@ export default function App() {
                                 />
                             </BrowserRouter>
                         </CartProvider>
-                    </UserAuthProvider>
-                </AuthProvider>
+                    </AuthProvider>
+                </SettingsProvider>
             </ConfirmProvider>
         </div>
     );
